@@ -1,12 +1,14 @@
-# ioBroker.tapo
+# ioBroker.tapodevelopment
 
 ## Project Overview
+
 ioBroker adapter for TP-Link Tapo devices (smart plugs, bulbs, cameras, fans, hubs, thermostats).
 Communicates with devices locally via three protocols depending on device/firmware.
 
 ## Architecture
 
 ### Device Protocols (4 types)
+
 1. **AES SecurePassthrough** (old, legacy) — RSA handshake + AES-CBC encrypted JSON over HTTP port 80
 2. **KLAP v1** (md5) — Binary protocol with seed exchange over HTTP port 80
 3. **KLAP v2** (sha256) — Same as v1 but sha256-based auth hashes
@@ -39,7 +41,7 @@ Communicates with devices locally via three protocols depending on device/firmwa
   - `password_shadow` with `passwd_id`:
     - 1: md5_crypt ($1$salt$...)
     - 2: sha1(candidate)
-    - 3: sha1(md5(username) + "_" + MAC_WITH_COLONS)
+    - 3: sha1(md5(username) + "\_" + MAC_WITH_COLONS)
     - 5: sha256_crypt ($5$salt$...)
   - `password_authkey`: XOR(candidate, tmpkey) mapped through dictionary
   - `password_sha_with_salt`: sha256(name + decoded_salt + candidate) where name="admin"|"user"
@@ -65,6 +67,7 @@ Communicates with devices locally via three protocols depending on device/firmwa
 - Device discovery reports `encrypt_type`: "KLAP" or "TPAP"
 
 ### Class Hierarchy
+
 - `P100` (base) → all non-camera devices (P110, L510E, L520E, L530)
   - Supports: AES SecurePassthrough + KLAP v1/v2 + TPAP/SPAKE2+
   - `TpapCipher` class handles SPAKE2+ handshake and AES-CCM encrypt/decrypt
@@ -87,6 +90,7 @@ Communicates with devices locally via three protocols depending on device/firmwa
 - `.references/python-kasa-feature-tpap/` — python-kasa TPAP feature branch (SPAKE2+ reference implementation)
 
 ## Important Patterns
+
 - `json2iob.parse()` for creating ioBroker states from JSON — preferred over manual setState
 - `sendCommand()` on P100 for generic Tapo local API calls with reconnect logic
 - Camera uses `apiRequest()` for multipleRequest-style calls
@@ -100,8 +104,9 @@ Communicates with devices locally via three protocols depending on device/firmwa
 - Error code 1003 from AES handshake means "use different protocol" (KLAP or TPAP)
 
 ## Build & Deploy
+
 - Build: `npx tsc -p tsconfig.build.json`
-- Deploy locally: `cp -r build/* /usr/local/iobroker/node_modules/iobroker.tapo/build/`
+- Deploy locally: `cp -r build/* /usr/local/iobroker/node_modules/ioBroker.tapodevelopment/build/`
 - Restart: `iobroker restart tapo`
 - Logs: `iobroker logs tapo --lines 50`
 - ALWAYS build before push and before deploy

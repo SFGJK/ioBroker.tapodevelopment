@@ -80,7 +80,7 @@ jobs:
 #          sentry: true
 #          sentry-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
 #          sentry-project: "iobroker-tapo"
-#          sentry-version-prefix: "iobroker.tapo"
+#          sentry-version-prefix: "ioBroker.tapodevelopment"
 #          sentry-sourcemap-paths: "build/"
 #          # If your sentry project is linked to a GitHub repository, you can enable the following option
 #          # sentry-github-integration: true

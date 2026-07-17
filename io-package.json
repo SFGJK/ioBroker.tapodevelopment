@@ -1,9 +1,9 @@
 {
   "common": {
     "name": "tapo",
-    "version": "0.5.5",
+    "version": "0.6.0",
     "news": {
-      "0.5.5": {
+      "0.6.0": {
         "en": "added udp detection for better device detection",
         "de": "UDP-Discovery für bessere Geräteerkennung",
         "ru": "добавлено обнаружение udp для лучшего обнаружения устройства",
@@ -126,8 +126,8 @@
     "main": "build/main.js",
     "icon": "tapo.png",
     "enabled": true,
-    "extIcon": "https://raw.githubusercontent.com/TA2k/ioBroker.tapo/master/admin/tapo.png",
-    "readme": "https://github.com/TA2k/ioBroker.tapo/blob/master/README.md",
+    "extIcon": "https://raw.githubusercontent.com/TA2k/ioBroker.tapodevelopment/master/admin/tapo.png",
+    "readme": "https://github.com/TA2k/ioBroker.tapodevelopment/blob/master/README.md",
     "loglevel": "info",
     "mode": "daemon",
     "type": "iot-systems",

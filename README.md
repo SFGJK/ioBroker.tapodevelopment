@@ -1,15 +1,15 @@
 ![Logo](admin/tapo.png)
 
-# ioBroker.tapo
+# ioBroker.tapodevelopment
 
-[![NPM version](https://img.shields.io/npm/v/iobroker.tapo.svg)](https://www.npmjs.com/package/iobroker.tapo)
-[![Downloads](https://img.shields.io/npm/dm/iobroker.tapo.svg)](https://www.npmjs.com/package/iobroker.tapo)
+[![NPM version](https://img.shields.io/npm/v/ioBroker.tapodevelopment.svg)](https://www.npmjs.com/package/ioBroker.tapodevelopment)
+[![Downloads](https://img.shields.io/npm/dm/ioBroker.tapodevelopment.svg)](https://www.npmjs.com/package/ioBroker.tapodevelopment)
 ![Number of Installations](https://iobroker.live/badges/tapo-installed.svg)
 ![Current version in stable repository](https://iobroker.live/badges/tapo-stable.svg)
 
-[![NPM](https://nodei.co/npm/iobroker.tapo.png?downloads=true)](https://nodei.co/npm/iobroker.tapo/)
+[![NPM](https://nodei.co/npm/ioBroker.tapodevelopment.png?downloads=true)](https://nodei.co/npm/ioBroker.tapodevelopment/)
 
-**Tests:** ![Test and Release](https://github.com/TA2k/ioBroker.tapo/workflows/Test%20and%20Release/badge.svg)
+**Tests:** ![Test and Release](https://github.com/TA2k/ioBroker.tapodevelopment/workflows/Test%20and%20Release/badge.svg)
 
 ## tapo adapter for ioBroker
 
@@ -203,12 +203,18 @@ const alarmTypen = {
   32: "Herumlungern",
 };
 
-on({ id: "tapo.0.DEVICE_ID.detection.events.0.start_time", change: "ne" }, (obj) => {
-  const typ = getState("tapo.0.DEVICE_ID.detection.events.0.alarm_type").val;
-  sendTo("telegram.0", {
-    text: (alarmTypen[typ] || "Typ " + typ) + " um " + new Date(obj.state.val * 1000).toLocaleString(),
-  });
-});
+on(
+  { id: "tapo.0.DEVICE_ID.detection.events.0.start_time", change: "ne" },
+  (obj) => {
+    const typ = getState("tapo.0.DEVICE_ID.detection.events.0.alarm_type").val;
+    sendTo("telegram.0", {
+      text:
+        (alarmTypen[typ] || "Typ " + typ) +
+        " um " +
+        new Date(obj.state.val * 1000).toLocaleString(),
+    });
+  },
+);
 ```
 
 Blockly-Beispiel (als XML importierbar):
@@ -377,7 +383,8 @@ Nicht jede Kamera unterstuetzt alle Funktionen. Nicht unterstuetzte Befehle werd
 <https://forum.iobroker.net/topic/57336/test-adapter-tp-link-tapo/>
 
 ## Changelog
-### 0.5.5 (2026-05-25)
+
+### 0.6.0 (2026-05-25)
 
 - added udp detection for better device detection
 
