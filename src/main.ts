@@ -4,19 +4,19 @@
 
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
-import * as utils from '@iobroker/adapter-core';
-import axios, { AxiosInstance } from 'axios';
-import crypto from 'crypto';
-import https from 'https';
+import * as utils from "@iobroker/adapter-core";
+import axios, { AxiosInstance } from "axios";
+import crypto from "crypto";
+import https from "https";
 
-import Json2iob from 'json2iob';
-import { TAPOCamera } from './lib/utils/camera/tapoCamera';
-import L510E from './lib/utils/l510e';
-import L520E from './lib/utils/l520e';
-import L530 from './lib/utils/l530';
-import P100 from './lib/utils/p100';
-import P110 from './lib/utils/p110';
-import { discoverDevice } from './lib/utils/udpDiscovery';
+import Json2iob from "json2iob";
+import { TAPOCamera } from "./lib/utils/camera/tapoCamera";
+import L510E from "./lib/utils/l510e";
+import L520E from "./lib/utils/l520e";
+import L530 from "./lib/utils/l530";
+import P100 from "./lib/utils/p100";
+import P110 from "./lib/utils/p110";
+import { discoverDevice } from "./lib/utils/udpDiscovery";
 class Tapo extends utils.Adapter {
   private devices: { [key: string]: any };
   private deviceObjects: { [key: string]: any };
@@ -36,11 +36,11 @@ class Tapo extends utils.Adapter {
   public constructor(options: Partial<utils.AdapterOptions> = {}) {
     super({
       ...options,
-      name: 'tapo',
+      name: "tapo",
     });
-    this.on('ready', this.onReady.bind(this));
-    this.on('stateChange', this.onStateChange.bind(this));
-    this.on('unload', this.onUnload.bind(this));
+    this.on("ready", this.onReady.bind(this));
+    this.on("stateChange", this.onStateChange.bind(this));
+    this.on("unload", this.onUnload.bind(this));
     this.devices = {};
     this.deviceObjects = {};
     this.json2iob = new Json2iob(this);
@@ -51,7 +51,8 @@ class Tapo extends utils.Adapter {
       }),
     });
     this.secret = Buffer.from([
-      54, 101, 100, 55, 100, 57, 55, 102, 51, 101, 55, 51, 52, 54, 55, 102, 56, 97, 53, 98, 97, 98, 57, 48, 98, 53, 55, 55, 98, 97, 52, 99,
+      54, 101, 100, 55, 100, 57, 55, 102, 51, 101, 55, 51, 52, 54, 55, 102, 56,
+      97, 53, 98, 97, 98, 57, 48, 98, 53, 55, 55, 98, 97, 52, 99,
     ]);
   }
 
@@ -59,13 +60,15 @@ class Tapo extends utils.Adapter {
    * Is called when databases are connected and adapter received configuration.
    */
   private async onReady(): Promise<void> {
-    this.setState('info.connection', false, true);
+    this.setState("info.connection", false, true);
     if (this.config.interval < 0.5) {
-      this.log.info('Set interval to minimum 0.5');
+      this.log.info("Set interval to minimum 0.5");
       this.config.interval = 0.5;
     }
     if (!this.config.username || !this.config.password) {
-      this.log.error('Please set username and password in the instance settings');
+      this.log.error(
+        "Please set username and password in the instance settings",
+      );
       return;
     }
     this.config.username = this.config.username.toLowerCase();
@@ -74,36 +77,36 @@ class Tapo extends utils.Adapter {
     this.reLoginTimeout = null;
     this.refreshTokenTimeout = null;
     this.session = {};
-    this.subscribeStates('*');
+    this.subscribeStates("*");
 
-    const termIdState = await this.getStateAsync('termId');
+    const termIdState = await this.getStateAsync("termId");
     if (termIdState && termIdState.val) {
       this.termId = termIdState.val;
     } else {
-      await this.setObjectNotExistsAsync('termId', {
-        type: 'state',
+      await this.setObjectNotExistsAsync("termId", {
+        type: "state",
         common: {
-          name: 'Terminal ID',
+          name: "Terminal ID",
           write: false,
           read: true,
-          type: 'string',
-          role: 'text',
+          type: "string",
+          role: "text",
         },
         native: {},
       });
       this.termId = crypto.randomUUID();
-      await this.setStateAsync('termId', this.termId, true);
+      await this.setStateAsync("termId", this.termId, true);
     }
 
-    this.log.info('Login tp TAPO App');
+    this.log.info("Login tp TAPO App");
     await this.login();
     if (this.session.token) {
       await this.getDeviceList();
     } else {
-      this.log.warn('Login failed using cached device list');
-      const deviceListState = await this.getStateAsync('deviceList');
+      this.log.warn("Login failed using cached device list");
+      const deviceListState = await this.getStateAsync("deviceList");
       if (deviceListState && deviceListState.val) {
-        this.log.info('Use cached device list');
+        this.log.info("Use cached device list");
         this.devices = JSON.parse(deviceListState.val as string);
         for (const id in this.devices) {
           if (this.devices[id].ip) {
@@ -112,7 +115,7 @@ class Tapo extends utils.Adapter {
                 this.log.info(`Initialized ${id}`);
               })
               .catch((e) => {
-                this.log.error(e?.message || e || 'initDevice failed');
+                this.log.error(e?.message || e || "initDevice failed");
               });
             this.log.debug(`initResult ${id} ${JSON.stringify(initResult)}`);
           }
@@ -120,9 +123,9 @@ class Tapo extends utils.Adapter {
       }
     }
 
-    this.log.info('Wait for connections for non camera devices');
+    this.log.info("Wait for connections for non camera devices");
     await this.sleep(10000);
-    this.log.info('Start first Update');
+    this.log.info("Start first Update");
     this.updateDevices();
     this.firstStart = false;
     this.updateInterval = setInterval(async () => {
@@ -131,54 +134,58 @@ class Tapo extends utils.Adapter {
   }
   async login(): Promise<void> {
     let body = JSON.stringify({
-      appVersion: '2.8.21',
+      appVersion: "2.8.21",
       refreshTokenNeeded: true,
-      platform: 'iOS 14.8',
+      platform: "iOS 14.8",
       cloudPassword: this.config.password,
       terminalUUID: this.termId,
       cloudUserName: this.config.username,
-      terminalName: 'ioBroker',
-      terminalMeta: '3',
-      appType: 'TP-Link_Tapo_iOS',
+      terminalName: "ioBroker",
+      terminalMeta: "3",
+      appType: "TP-Link_Tapo_iOS",
     });
-    let path = 'api/v2/account/login';
-    const mfaIdState = await this.getStateAsync('mfaId');
+    let path = "api/v2/account/login";
+    const mfaIdState = await this.getStateAsync("mfaId");
     if (mfaIdState && mfaIdState.val) {
       if (!this.config.mfa) {
-        this.log.error('Please set mfa in the instance settings');
+        this.log.error("Please set mfa in the instance settings");
         return;
       }
 
       body = JSON.stringify({
         cloudUserName: this.config.username,
         MFAProcessId: mfaIdState.val,
-        appType: 'TP-Link_Tapo_iOS',
+        appType: "TP-Link_Tapo_iOS",
         MFAType: 2,
         code: this.config.mfa,
         terminalBindEnabled: true,
       });
-      path = 'api/v2/account/checkMFACodeAndLogin';
-      await this.setStateAsync('mfaId', '', true);
+      path = "api/v2/account/checkMFACodeAndLogin";
+      await this.setStateAsync("mfaId", "", true);
     }
-    const md5 = crypto.createHash('md5').update(body).digest('base64');
+    const md5 = crypto.createHash("md5").update(body).digest("base64");
     this.log.debug(md5);
-    const content = md5 + '\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/' + path;
-    const signature = crypto.createHmac('sha1', this.secret).update(content).digest('hex');
+    const content =
+      md5 + "\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/" + path;
+    const signature = crypto
+      .createHmac("sha1", this.secret)
+      .update(content)
+      .digest("hex");
     await this.requestClient({
-      method: 'post',
+      method: "post",
       url:
-        'https://n-wap-gw.tplinkcloud.com/' +
+        "https://n-wap-gw.tplinkcloud.com/" +
         path +
-        '?termID=' +
+        "?termID=" +
         this.termId +
-        '&appVer=2.8.21&locale=de_DE&appName=TP-Link_Tapo_iOS&netType=wifi&model=iPhone10%2C5&termName=iPhone&termMeta=3&brand=TPLINK&ospf=iOS%2014.8',
+        "&appVer=2.8.21&locale=de_DE&appName=TP-Link_Tapo_iOS&netType=wifi&model=iPhone10%2C5&termName=iPhone&termMeta=3&brand=TPLINK&ospf=iOS%2014.8",
       headers: {
-        'Content-Type': 'application/json;UTF-8',
-        Accept: '*/*',
-        'User-Agent': 'Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)',
-        'Accept-Language': 'de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8',
-        'X-Authorization':
-          'Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=' +
+        "Content-Type": "application/json;UTF-8",
+        Accept: "*/*",
+        "User-Agent": "Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)",
+        "Accept-Language": "de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8",
+        "X-Authorization":
+          "Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=" +
           signature,
       },
       data: body,
@@ -190,49 +197,61 @@ class Tapo extends utils.Adapter {
           return;
         }
         if (res.data.result?.MFAProcessId) {
-          this.log.info('Found MFA Process please enter MFA in the instance settings');
-          await this.setObjectNotExistsAsync('mfaId', {
-            type: 'state',
+          this.log.info(
+            "Found MFA Process please enter MFA in the instance settings",
+          );
+          await this.setObjectNotExistsAsync("mfaId", {
+            type: "state",
             common: {
-              name: 'MFA Id',
+              name: "MFA Id",
               write: false,
               read: true,
-              type: 'string',
-              role: 'text',
+              type: "string",
+              role: "text",
             },
             native: {},
           });
-          await this.setStateAsync('mfaId', res.data.result?.MFAProcessId, true);
+          await this.setStateAsync(
+            "mfaId",
+            res.data.result?.MFAProcessId,
+            true,
+          );
 
           const body = JSON.stringify({
             cloudPassword: this.config.password,
-            locale: 'de_DE',
+            locale: "de_DE",
             terminalUUID: this.termId,
             cloudUserName: this.config.username,
-            appType: 'TP-Link_Tapo_iOS',
+            appType: "TP-Link_Tapo_iOS",
           });
 
-          const path = 'api/v2/account/getEmailVC4TerminalMFA';
+          const path = "api/v2/account/getEmailVC4TerminalMFA";
 
-          const md5 = crypto.createHash('md5').update(body).digest('base64');
+          const md5 = crypto.createHash("md5").update(body).digest("base64");
           this.log.debug(md5);
-          const content = md5 + '\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/' + path;
-          const signature = crypto.createHmac('sha1', this.secret).update(content).digest('hex');
+          const content =
+            md5 +
+            "\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/" +
+            path;
+          const signature = crypto
+            .createHmac("sha1", this.secret)
+            .update(content)
+            .digest("hex");
           await this.requestClient({
-            method: 'post',
+            method: "post",
             url:
-              'https://n-wap-gw.tplinkcloud.com/' +
+              "https://n-wap-gw.tplinkcloud.com/" +
               path +
-              '?termID=' +
+              "?termID=" +
               this.termId +
-              '&appVer=2.8.21&locale=de_DE&appName=TP-Link_Tapo_iOS&netType=wifi&model=iPhone10%2C5&termName=iPhone&termMeta=3&brand=TPLINK&ospf=iOS%2014.8',
+              "&appVer=2.8.21&locale=de_DE&appName=TP-Link_Tapo_iOS&netType=wifi&model=iPhone10%2C5&termName=iPhone&termMeta=3&brand=TPLINK&ospf=iOS%2014.8",
             headers: {
-              'Content-Type': 'application/json;UTF-8',
-              Accept: '*/*',
-              'User-Agent': 'Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)',
-              'Accept-Language': 'de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8',
-              'X-Authorization':
-                'Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=' +
+              "Content-Type": "application/json;UTF-8",
+              Accept: "*/*",
+              "User-Agent": "Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)",
+              "Accept-Language": "de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8",
+              "X-Authorization":
+                "Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=" +
                 signature,
             },
             data: body,
@@ -246,20 +265,21 @@ class Tapo extends utils.Adapter {
             })
             .catch((error) => {
               this.log.error(error);
-              error.response && this.log.error(JSON.stringify(error.response.data));
+              error.response &&
+                this.log.error(JSON.stringify(error.response.data));
             });
           return;
         }
 
         if (!res.data.result || !res.data.result.token) {
-          this.log.error('Login failed');
+          this.log.error("Login failed");
           this.log.error(JSON.stringify(res.data));
           return;
         }
         this.session = res.data.result;
         if (this.session.token) {
-          this.log.info('Login succesfull');
-          this.setState('info.connection', true, true);
+          this.log.info("Login succesfull");
+          this.setState("info.connection", true, true);
         }
         return;
       })
@@ -271,22 +291,27 @@ class Tapo extends utils.Adapter {
 
   async getDeviceList(): Promise<void> {
     const body =
-      '{"index":0,"deviceTypeList":["SMART.TAPOBULB","SMART.TAPOPLUG","SMART.IPCAMERA","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH"],"limit":30}';
-    const md5 = crypto.createHash('md5').update(body).digest('base64');
+      '{"index":0,"deviceTypeList":["SMART.TAPOBULB","SMART.TAPOPLUG","SMART.IPCAMERA","SMART.TAPOHUB","SMART.TAPOSENSOR","SMART.TAPOSWITCH","SMART.TAPODOORBELL"],"limit":30}';
+    const md5 = crypto.createHash("md5").update(body).digest("base64");
     this.log.debug(md5);
-    const content = md5 + '\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/api/v2/common/getDeviceListByPage';
-    const signature = crypto.createHmac('sha1', this.secret).update(content).digest('hex');
+    const content =
+      md5 +
+      "\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/api/v2/common/getDeviceListByPage";
+    const signature = crypto
+      .createHmac("sha1", this.secret)
+      .update(content)
+      .digest("hex");
     await this.requestClient({
-      method: 'post',
+      method: "post",
       url: `https://n-euw1-wap-gw.tplinkcloud.com/api/v2/common/getDeviceListByPage?token=${this.session.token}&termID=${this.termId}&appVer=2.8.21&locale=de_DE&appName=TP-Link_Tapo_iOS&netType=wifi&model=iPhone10%2C5&termName=iPhone&termMeta=3&brand=TPLINK&ospf=iOS%2014.8`,
       headers: {
-        'Content-Type': 'application/json;UTF-8',
-        'Content-MD5': md5,
-        Accept: '*/*',
-        'User-Agent': 'Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)',
-        'Accept-Language': 'de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8',
-        'X-Authorization':
-          'Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=' +
+        "Content-Type": "application/json;UTF-8",
+        "Content-MD5": md5,
+        Accept: "*/*",
+        "User-Agent": "Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)",
+        "Accept-Language": "de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8",
+        "X-Authorization":
+          "Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=" +
           signature,
       },
       data: body,
@@ -305,149 +330,322 @@ class Tapo extends utils.Adapter {
           let name = device.alias;
 
           if (this.isBase64(device.alias)) {
-            name = Buffer.from(device.alias, 'base64').toString('utf8');
+            name = Buffer.from(device.alias, "base64").toString("utf8");
           }
           this.log.debug(`Found device ${id} ${name}`);
           await this.extendObject(id, {
-            type: 'device',
+            type: "device",
             common: {
               name: name,
             },
             native: {},
           });
-          await this.setObjectNotExistsAsync(id + '.connected', {
-            type: 'state',
+          await this.setObjectNotExistsAsync(id + ".connected", {
+            type: "state",
             common: {
-              name: 'Device connected',
-              type: 'boolean',
-              role: 'indicator.reachable',
+              name: "Device connected",
+              type: "boolean",
+              role: "indicator.reachable",
               read: true,
               write: false,
               def: false,
             },
             native: {},
           });
-          await this.setObjectNotExistsAsync(id + '.remote', {
-            type: 'channel',
+          await this.setObjectNotExistsAsync(id + ".remote", {
+            type: "channel",
             common: {
-              name: 'Remote Controls',
+              name: "Remote Controls",
             },
             native: {},
           });
 
-          type RemoteEntry = { command: string; name: string; type?: string; role?: string; def?: any };
+          type RemoteEntry = {
+            command: string;
+            name: string;
+            type?: string;
+            role?: string;
+            def?: any;
+          };
 
           const baseRemotes: RemoteEntry[] = [
-            { command: 'refresh', name: 'True = Refresh' },
-            { command: 'setPowerState', name: 'True = On, False = Off' },
-            { command: 'setLedEnabled', name: 'LED Indicator On/Off' },
-            { command: 'setAutoUpdate', name: 'Firmware Auto-Update On/Off' },
+            { command: "refresh", name: "True = Refresh" },
+            { command: "setPowerState", name: "True = On, False = Off" },
+            { command: "setLedEnabled", name: "LED Indicator On/Off" },
+            { command: "setAutoUpdate", name: "Firmware Auto-Update On/Off" },
           ];
           const plugExtras: RemoteEntry[] = [
-            { command: 'setAutoOff', name: 'Auto-Off On/Off' },
-            { command: 'setAutoOffDelay', name: 'Auto-Off Delay (minutes)', type: 'number', def: 120, role: 'level' },
-            { command: 'setChildProtection', name: 'Button Lock On/Off' },
+            { command: "setAutoOff", name: "Auto-Off On/Off" },
+            {
+              command: "setAutoOffDelay",
+              name: "Auto-Off Delay (minutes)",
+              type: "number",
+              def: 120,
+              role: "level",
+            },
+            { command: "setChildProtection", name: "Button Lock On/Off" },
           ];
           const energyExtras: RemoteEntry[] = [
             ...plugExtras,
-            { command: 'setPowerProtection', name: 'Overload Protection On/Off' },
-            { command: 'setPowerProtectionThreshold', name: 'Overload Threshold (Watts)', type: 'number', def: 2300, role: 'level' },
+            {
+              command: "setPowerProtection",
+              name: "Overload Protection On/Off",
+            },
+            {
+              command: "setPowerProtectionThreshold",
+              name: "Overload Threshold (Watts)",
+              type: "number",
+              def: 2300,
+              role: "level",
+            },
           ];
           const lightExtras: RemoteEntry[] = [
-            { command: 'setBrightness', name: 'Brightness (0-100)', type: 'number', role: 'level.brightness', def: 5 },
-            { command: 'setColorTemp', name: 'Color Temp (2500-6500K)', type: 'number', role: 'level.color.temperature', def: 3e3 },
-            { command: 'setColor', name: 'Color (hue, saturation)', def: '30, 100', type: 'string' },
-            { command: 'setLightEffect', name: 'Light Effect (id/off)', type: 'string', def: 'off', role: 'text' },
-            { command: 'setGradualOnOff', name: 'Gradual On/Off' },
+            {
+              command: "setBrightness",
+              name: "Brightness (0-100)",
+              type: "number",
+              role: "level.brightness",
+              def: 5,
+            },
+            {
+              command: "setColorTemp",
+              name: "Color Temp (2500-6500K)",
+              type: "number",
+              role: "level.color.temperature",
+              def: 3e3,
+            },
+            {
+              command: "setColor",
+              name: "Color (hue, saturation)",
+              def: "30, 100",
+              type: "string",
+            },
+            {
+              command: "setLightEffect",
+              name: "Light Effect (id/off)",
+              type: "string",
+              def: "off",
+              role: "text",
+            },
+            { command: "setGradualOnOff", name: "Gradual On/Off" },
           ];
           const fanExtras: RemoteEntry[] = [
-            { command: 'setFanSpeedLevel', name: 'Fan Speed (0-4)', type: 'number', def: 0, role: 'level' },
-            { command: 'setFanSleepMode', name: 'Fan Sleep Mode On/Off' },
+            {
+              command: "setFanSpeedLevel",
+              name: "Fan Speed (0-4)",
+              type: "number",
+              def: 0,
+              role: "level",
+            },
+            { command: "setFanSleepMode", name: "Fan Sleep Mode On/Off" },
           ];
           const hubExtras: RemoteEntry[] = [
-            { command: 'setPowerStateChild', name: 'childId,true' },
-            { command: 'playAlarm', name: 'True = Play Alarm' },
-            { command: 'stopAlarm', name: 'True = Stop Alarm' },
-            { command: 'setAlarmVolume', name: 'Alarm Volume (mute/low/normal/high)', type: 'string', def: 'normal', role: 'text' },
-            { command: 'setAlarmDuration', name: 'Alarm Duration (seconds)', type: 'number', def: 10, role: 'level' },
+            { command: "setPowerStateChild", name: "childId,true" },
+            { command: "playAlarm", name: "True = Play Alarm" },
+            { command: "stopAlarm", name: "True = Stop Alarm" },
+            {
+              command: "setAlarmVolume",
+              name: "Alarm Volume (mute/low/normal/high)",
+              type: "string",
+              def: "normal",
+              role: "text",
+            },
+            {
+              command: "setAlarmDuration",
+              name: "Alarm Duration (seconds)",
+              type: "number",
+              def: 10,
+              role: "level",
+            },
           ];
           const thermostatExtras: RemoteEntry[] = [
-            { command: 'setTargetTemperature', name: 'Target Temperature', type: 'number', def: 20, role: 'level.temperature' },
-            { command: 'setTemperatureOffset', name: 'Temperature Offset (-10..10)', type: 'number', def: 0, role: 'level' },
-            { command: 'setFrostProtection', name: 'Frost Protection On/Off' },
+            {
+              command: "setTargetTemperature",
+              name: "Target Temperature",
+              type: "number",
+              def: 20,
+              role: "level.temperature",
+            },
+            {
+              command: "setTemperatureOffset",
+              name: "Temperature Offset (-10..10)",
+              type: "number",
+              def: 0,
+              role: "level",
+            },
+            { command: "setFrostProtection", name: "Frost Protection On/Off" },
           ];
           const cameraRemotes: RemoteEntry[] = [
-            { command: 'refresh', name: 'True = Refresh' },
-            { command: 'setAlertConfig', name: 'Alarm On/Off' },
-            { command: 'setLensMaskConfig', name: 'Privacy (Eyes) On/Off' },
-            { command: 'setForceWhitelampState', name: 'Force Whitelamp On/Off' },
-            { command: 'setLedStatus', name: 'LED On/Off' },
-            { command: 'setMsgPushConfig', name: 'Notifications On/Off' },
-            { command: 'setDetectionConfig', name: 'Motion Detection On/Off' },
-            { command: 'setAutoTrackTarget', name: 'Auto Track On/Off' },
-            { command: 'setPersonDetection', name: 'Person Detection On/Off' },
-            { command: 'setVehicleDetection', name: 'Vehicle Detection On/Off' },
-            { command: 'setPetDetection', name: 'Pet Detection On/Off' },
-            { command: 'setBabyCryDetection', name: 'Baby Cry Detection On/Off' },
-            { command: 'setBarkDetection', name: 'Bark Detection On/Off' },
-            { command: 'setMeowDetection', name: 'Meow Detection On/Off' },
-            { command: 'setGlassBreakDetection', name: 'Glass Break Detection On/Off' },
-            { command: 'setTamperDetection', name: 'Tamper Detection On/Off' },
-            { command: 'setImageFlipVertical', name: 'Image Flip On/Off' },
-            { command: 'setLensDistortionCorrection', name: 'Lens Distortion Correction On/Off' },
-            { command: 'setRecordAudio', name: 'Record Audio On/Off' },
-            { command: 'setAutoUpgrade', name: 'Auto Firmware Upgrade On/Off' },
-            { command: 'setHDR', name: 'HDR On/Off' },
-            { command: 'setCoverConfig', name: 'Privacy Zones On/Off' },
-            { command: 'setRecordPlan', name: 'SD Card Recording On/Off' },
-            { command: 'moveMotor', name: 'Move Camera X,Y (-360..360, -45..45)', type: 'string', def: '0, 0', role: 'text' },
-            { command: 'moveMotorStep', name: 'Angle (0-360)', type: 'string', def: '180', role: 'text' },
-            { command: 'moveToPreset', name: 'PresetId', type: 'string', def: '1', role: 'text' },
-            { command: 'calibrateMotor', name: 'True = Calibrate Motor' },
-            { command: 'savePreset', name: 'Save Preset (name)', type: 'string', def: '', role: 'text' },
-            { command: 'deletePreset', name: 'Delete Preset (id)', type: 'string', def: '', role: 'text' },
-            { command: 'setCruise', name: 'Patrol (x/y/off)', type: 'string', def: 'off', role: 'text' },
-            { command: 'startManualAlarm', name: 'True = Start Alarm' },
-            { command: 'stopManualAlarm', name: 'True = Stop Alarm' },
-            { command: 'setAlarmMode', name: 'Alarm Mode (both/light/sound/off)', type: 'string', def: 'off', role: 'text' },
-            { command: 'setDayNightMode', name: 'Day/Night Mode (auto/on/off)', type: 'string', def: 'auto', role: 'text' },
-            { command: 'setLightFrequencyMode', name: 'Light Frequency (auto/50/60)', type: 'string', def: 'auto', role: 'text' },
-            { command: 'setSpeakerVolume', name: 'Speaker Volume (0-100)', type: 'number', def: 50, role: 'level' },
-            { command: 'setMicrophoneVolume', name: 'Microphone Volume (0-100)', type: 'number', def: 50, role: 'level' },
-            { command: 'setMotionDetectionSensitivity', name: 'Motion Sensitivity (high/normal/low)', type: 'string', def: 'normal', role: 'text' },
-            { command: 'setPersonDetectionSensitivity', name: 'Person Sensitivity (high/normal/low)', type: 'string', def: 'normal', role: 'text' },
-            { command: 'setOsd', name: 'OSD Label Text', type: 'string', def: '', role: 'text' },
-            { command: 'reboot', name: 'True = Reboot Camera' },
-            { command: 'formatSdCard', name: 'True = Format SD Card' },
+            { command: "refresh", name: "True = Refresh" },
+            { command: "setAlertConfig", name: "Alarm On/Off" },
+            { command: "setLensMaskConfig", name: "Privacy (Eyes) On/Off" },
+            {
+              command: "setForceWhitelampState",
+              name: "Force Whitelamp On/Off",
+            },
+            { command: "setLedStatus", name: "LED On/Off" },
+            { command: "setMsgPushConfig", name: "Notifications On/Off" },
+            { command: "setDetectionConfig", name: "Motion Detection On/Off" },
+            { command: "setAutoTrackTarget", name: "Auto Track On/Off" },
+            { command: "setPersonDetection", name: "Person Detection On/Off" },
+            {
+              command: "setVehicleDetection",
+              name: "Vehicle Detection On/Off",
+            },
+            { command: "setPetDetection", name: "Pet Detection On/Off" },
+            {
+              command: "setBabyCryDetection",
+              name: "Baby Cry Detection On/Off",
+            },
+            { command: "setBarkDetection", name: "Bark Detection On/Off" },
+            { command: "setMeowDetection", name: "Meow Detection On/Off" },
+            {
+              command: "setGlassBreakDetection",
+              name: "Glass Break Detection On/Off",
+            },
+            { command: "setTamperDetection", name: "Tamper Detection On/Off" },
+            { command: "setImageFlipVertical", name: "Image Flip On/Off" },
+            {
+              command: "setLensDistortionCorrection",
+              name: "Lens Distortion Correction On/Off",
+            },
+            { command: "setRecordAudio", name: "Record Audio On/Off" },
+            { command: "setAutoUpgrade", name: "Auto Firmware Upgrade On/Off" },
+            { command: "setHDR", name: "HDR On/Off" },
+            { command: "setCoverConfig", name: "Privacy Zones On/Off" },
+            { command: "setRecordPlan", name: "SD Card Recording On/Off" },
+            {
+              command: "moveMotor",
+              name: "Move Camera X,Y (-360..360, -45..45)",
+              type: "string",
+              def: "0, 0",
+              role: "text",
+            },
+            {
+              command: "moveMotorStep",
+              name: "Angle (0-360)",
+              type: "string",
+              def: "180",
+              role: "text",
+            },
+            {
+              command: "moveToPreset",
+              name: "PresetId",
+              type: "string",
+              def: "1",
+              role: "text",
+            },
+            { command: "calibrateMotor", name: "True = Calibrate Motor" },
+            {
+              command: "savePreset",
+              name: "Save Preset (name)",
+              type: "string",
+              def: "",
+              role: "text",
+            },
+            {
+              command: "deletePreset",
+              name: "Delete Preset (id)",
+              type: "string",
+              def: "",
+              role: "text",
+            },
+            {
+              command: "setCruise",
+              name: "Patrol (x/y/off)",
+              type: "string",
+              def: "off",
+              role: "text",
+            },
+            { command: "startManualAlarm", name: "True = Start Alarm" },
+            { command: "stopManualAlarm", name: "True = Stop Alarm" },
+            {
+              command: "setAlarmMode",
+              name: "Alarm Mode (both/light/sound/off)",
+              type: "string",
+              def: "off",
+              role: "text",
+            },
+            {
+              command: "setDayNightMode",
+              name: "Day/Night Mode (auto/on/off)",
+              type: "string",
+              def: "auto",
+              role: "text",
+            },
+            {
+              command: "setLightFrequencyMode",
+              name: "Light Frequency (auto/50/60)",
+              type: "string",
+              def: "auto",
+              role: "text",
+            },
+            {
+              command: "setSpeakerVolume",
+              name: "Speaker Volume (0-100)",
+              type: "number",
+              def: 50,
+              role: "level",
+            },
+            {
+              command: "setMicrophoneVolume",
+              name: "Microphone Volume (0-100)",
+              type: "number",
+              def: 50,
+              role: "level",
+            },
+            {
+              command: "setMotionDetectionSensitivity",
+              name: "Motion Sensitivity (high/normal/low)",
+              type: "string",
+              def: "normal",
+              role: "text",
+            },
+            {
+              command: "setPersonDetectionSensitivity",
+              name: "Person Sensitivity (high/normal/low)",
+              type: "string",
+              def: "normal",
+              role: "text",
+            },
+            {
+              command: "setOsd",
+              name: "OSD Label Text",
+              type: "string",
+              def: "",
+              role: "text",
+            },
+            { command: "reboot", name: "True = Reboot Camera" },
+            { command: "formatSdCard", name: "True = Format SD Card" },
           ];
 
           // Select remotes based on device type
           let remoteArray: RemoteEntry[];
-          const dn = device.deviceName || '';
-          if (device.deviceType.includes('CAMERA')) {
+          const dn = device.deviceName || "";
+          if (device.deviceType.includes("CAMERA")) {
             remoteArray = cameraRemotes;
-          } else if (dn.startsWith('P110') || dn.startsWith('P115')) {
+          } else if (dn.startsWith("P110") || dn.startsWith("P115")) {
             remoteArray = [...baseRemotes, ...energyExtras];
-          } else if (dn.startsWith('P')) {
+          } else if (dn.startsWith("P")) {
             remoteArray = [...baseRemotes, ...plugExtras];
-          } else if (dn.startsWith('L') || dn.startsWith('KL')) {
+          } else if (dn.startsWith("L") || dn.startsWith("KL")) {
             remoteArray = [...baseRemotes, ...lightExtras];
-          } else if (dn.startsWith('F')) {
+          } else if (dn.startsWith("F")) {
             remoteArray = [...baseRemotes, ...fanExtras];
-          } else if (dn.startsWith('H')) {
+          } else if (dn.startsWith("H")) {
             remoteArray = [...baseRemotes, ...hubExtras];
-          } else if (dn.startsWith('KE')) {
+          } else if (dn.startsWith("KE")) {
             remoteArray = [...baseRemotes, ...thermostatExtras];
           } else {
             remoteArray = [...baseRemotes, ...plugExtras];
           }
           remoteArray.forEach((remote) => {
-            this.extendObject(id + '.remote.' + remote.command, {
-              type: 'state',
+            this.extendObject(id + ".remote." + remote.command, {
+              type: "state",
               common: {
-                name: remote.name || '',
-                type: (remote.type || 'boolean') as ioBroker.CommonType,
-                role: remote.role || 'switch',
+                name: remote.name || "",
+                type: (remote.type || "boolean") as ioBroker.CommonType,
+                role: remote.role || "switch",
                 def: remote.def != null ? remote.def : false,
                 write: true,
                 read: true,
@@ -460,21 +658,24 @@ class Tapo extends utils.Adapter {
           //try new API
 
           await this.requestClient({
-            method: 'get',
-            url: 'https://euw1-app-server.iot.i.tplinknbu.com/v1/things/' + id + '/details',
+            method: "get",
+            url:
+              "https://euw1-app-server.iot.i.tplinknbu.com/v1/things/" +
+              id +
+              "/details",
             headers: {
-              'x-locale': 'de',
-              Authorization: 'ut|' + this.session.token,
-              'app-cid': 'app:TP-Link_Tapo_iOS:' + this.termId,
-              'x-ospf': 'iOS 14.8',
-              'x-app-name': 'TP-Link_Tapo_iOS',
-              Accept: '*/*',
-              'Accept-Language': 'de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8',
-              'Content-Type': 'application/json;UTF-8',
-              'User-Agent': 'Tapo/2.9.7 (iPhone; iOS 14.8; Scale/3.00)',
-              'x-term-id': this.termId,
-              'x-app-version': '2.9.7',
-              'x-net-type': 'wifi',
+              "x-locale": "de",
+              Authorization: "ut|" + this.session.token,
+              "app-cid": "app:TP-Link_Tapo_iOS:" + this.termId,
+              "x-ospf": "iOS 14.8",
+              "x-app-name": "TP-Link_Tapo_iOS",
+              Accept: "*/*",
+              "Accept-Language": "de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8",
+              "Content-Type": "application/json;UTF-8",
+              "User-Agent": "Tapo/2.9.7 (iPhone; iOS 14.8; Scale/3.00)",
+              "x-term-id": this.termId,
+              "x-app-version": "2.9.7",
+              "x-net-type": "wifi",
             },
           })
             .then(async (res) => {
@@ -488,7 +689,8 @@ class Tapo extends utils.Adapter {
             })
             .catch((error) => {
               this.log.warn(error);
-              error.response && this.log.error(JSON.stringify(error.response.data));
+              error.response &&
+                this.log.error(JSON.stringify(error.response.data));
             });
           //no ip via new API try old api
           if (!this.devices[id].ip) {
@@ -508,21 +710,26 @@ class Tapo extends utils.Adapter {
               },
               "deviceId": "${id}"
             }`;
-            const md5 = crypto.createHash('md5').update(body).digest('base64');
+            const md5 = crypto.createHash("md5").update(body).digest("base64");
             this.log.debug(md5);
-            const content = md5 + '\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/api/v2/common/passthrough';
-            const signature = crypto.createHmac('sha1', this.secret).update(content).digest('hex');
+            const content =
+              md5 +
+              "\n9999999999\nfee66616-58dd-4bcb-be79-fe092d800a21\n/api/v2/common/passthrough";
+            const signature = crypto
+              .createHmac("sha1", this.secret)
+              .update(content)
+              .digest("hex");
             await this.requestClient({
-              method: 'post',
+              method: "post",
               url: `https://n-euw1-wap-gw.tplinkcloud.com/api/v2/common/passthrough?token=${this.session.token}&termID=${this.termId}&appVer=2.8.21&locale=de_DE&appName=TP-Link_Tapo_iOS&netType=wifi&model=iPhone10%2C5&termName=iPhone&termMeta=3&brand=TPLINK&ospf=iOS%2014.8`,
               headers: {
-                'Content-Type': 'application/json;UTF-8',
-                'Content-MD5': md5,
-                Accept: '*/*',
-                'User-Agent': 'Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)',
-                'Accept-Language': 'de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8',
-                'X-Authorization':
-                  'Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=' +
+                "Content-Type": "application/json;UTF-8",
+                "Content-MD5": md5,
+                Accept: "*/*",
+                "User-Agent": "Tapo/2.8.21 (iPhone; iOS 14.8; Scale/3.00)",
+                "Accept-Language": "de-DE;q=1, uk-DE;q=0.9, en-DE;q=0.8",
+                "X-Authorization":
+                  "Timestamp=9999999999, Nonce=fee66616-58dd-4bcb-be79-fe092d800a21, AccessKey=4d11b6b9d5ea4d19a829adbb9714b057, Signature=" +
                   signature,
               },
               data: body,
@@ -533,37 +740,42 @@ class Tapo extends utils.Adapter {
                 if (res.data.error_code) {
                   this.log.error(JSON.stringify(res.data));
                 } else {
-                  result = res.data.result?.responseData?.result?.responses[0]?.result?.network?.wan;
+                  result =
+                    res.data.result?.responseData?.result?.responses[0]?.result
+                      ?.network?.wan;
                   result.ip = result.ipaddr;
                   this.log.info(`Device ${id} has IP ${result.ip}`);
-                  delete result['.name'];
-                  delete result['.type'];
+                  delete result[".name"];
+                  delete result[".type"];
                   // result = res.data.result?.responseData?.result;
                   this.devices[id] = { ...this.devices[id], ...result };
                 }
               })
               .catch((error) => {
                 this.log.warn(error);
-                error.response && this.log.error(JSON.stringify(error.response.data));
+                error.response &&
+                  this.log.error(JSON.stringify(error.response.data));
               });
           }
           if (!this.devices[id].ip) {
-            const ipState = await this.getStateAsync(id + '.ip');
+            const ipState = await this.getStateAsync(id + ".ip");
             if (ipState && ipState.val) {
               this.devices[id].ip = ipState.val;
             } else {
-              await this.setObjectNotExistsAsync(id + '.ip', {
-                type: 'state',
+              await this.setObjectNotExistsAsync(id + ".ip", {
+                type: "state",
                 common: {
-                  name: 'IP',
+                  name: "IP",
                   write: true,
                   read: true,
-                  type: 'string',
-                  role: 'text',
+                  type: "string",
+                  role: "text",
                 },
                 native: {},
               });
-              this.log.warn(`No IP found for ${id} put the device online or set the ip state manually`);
+              this.log.warn(
+                `No IP found for ${id} put the device online or set the ip state manually`,
+              );
             }
           }
           this.json2iob.parse(id, this.devices[id]);
@@ -573,9 +785,11 @@ class Tapo extends utils.Adapter {
                 this.log.info(`Initialized ${id}`);
               })
               .catch((e: any) => {
-                this.log.error(e?.message || e || 'initDevice failed');
+                this.log.error(e?.message || e || "initDevice failed");
               });
-            this.log.debug(`initResult  camera ${id} ${JSON.stringify(initResult)}`);
+            this.log.debug(
+              `initResult  camera ${id} ${JSON.stringify(initResult)}`,
+            );
           }
         }
       })
@@ -584,19 +798,19 @@ class Tapo extends utils.Adapter {
         error.response && this.log.error(JSON.stringify(error.response.data));
       });
 
-    await this.setObjectNotExistsAsync('deviceList', {
-      type: 'state',
+    await this.setObjectNotExistsAsync("deviceList", {
+      type: "state",
       common: {
-        name: 'Cached device list',
+        name: "Cached device list",
         write: false,
         read: true,
-        type: 'string',
-        role: 'json',
+        type: "string",
+        role: "json",
       },
       native: {},
     });
 
-    await this.setStateAsync('deviceList', JSON.stringify(this.devices), true);
+    await this.setStateAsync("deviceList", JSON.stringify(this.devices), true);
   }
   async initDevice(id: string): Promise<void> {
     const device = this.devices[id];
@@ -604,7 +818,9 @@ class Tapo extends utils.Adapter {
       this.log.warn(`No IP found for ${id}`);
       return;
     }
-    this.log.info(`Init device ${id} type ${device.deviceName} with ip ${device.ip}`);
+    this.log.info(
+      `Init device ${id} type ${device.deviceName} with ip ${device.ip}`,
+    );
 
     let port: number | undefined;
     let useHttps: boolean | undefined;
@@ -618,39 +834,110 @@ class Tapo extends utils.Adapter {
           `UDP discovery for ${device.ip}: port=${port} https=${useHttps} encrypt=${discovery.encrypt_type} lv=${discovery.login_version} mac=${discovery.mac}`,
         );
       } else {
-        this.log.debug(`UDP discovery for ${device.ip}: no response (will use default port 80)`);
+        this.log.debug(
+          `UDP discovery for ${device.ip}: no response (will use default port 80)`,
+        );
       }
     } catch (e: any) {
-      this.log.debug(`UDP discovery failed for ${device.ip}: ${e?.message || e}`);
+      this.log.debug(
+        `UDP discovery failed for ${device.ip}: ${e?.message || e}`,
+      );
     }
 
     let deviceObject: any;
-    if (device.deviceName === 'P100') {
-      deviceObject = new P100(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
-    } else if (device.deviceName.startsWith('P110') || device.deviceName.startsWith('P115')) {
-      deviceObject = new P110(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
-    } else if (device.deviceName === 'L530' || device.deviceName.startsWith('L630')) {
-      deviceObject = new L530(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
-    } else if (device.deviceName === 'L510E') {
-      deviceObject = new L510E(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
-    } else if (device.deviceName === 'L520E') {
-      deviceObject = new L520E(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
-    } else if (device.deviceName.startsWith('L') || device.deviceName.startsWith('KL')) {
-      deviceObject = new L510E(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
-    } else if (device.deviceName.startsWith('C') || device.deviceName.startsWith('TC')) {
-      if (device.deviceName.startsWith('C4') && !(this.config as any).enableBatteryDevices) {
-        this.log.warn('Battery device found but ignored. Please enable in settings and check regularly the battery status');
+    if (device.deviceName === "P100") {
+      deviceObject = new P100(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
+    } else if (
+      device.deviceName.startsWith("P110") ||
+      device.deviceName.startsWith("P115")
+    ) {
+      deviceObject = new P110(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
+    } else if (
+      device.deviceName === "L530" ||
+      device.deviceName.startsWith("L630")
+    ) {
+      deviceObject = new L530(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
+    } else if (device.deviceName === "L510E") {
+      deviceObject = new L510E(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
+    } else if (device.deviceName === "L520E") {
+      deviceObject = new L520E(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
+    } else if (
+      device.deviceName.startsWith("L") ||
+      device.deviceName.startsWith("KL")
+    ) {
+      deviceObject = new L510E(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
+    } else if (
+      device.deviceName.startsWith("C") ||
+      device.deviceName.startsWith("TC")
+    ) {
+      if (
+        device.deviceName.startsWith("C4") &&
+        !(this.config as any).enableBatteryDevices
+      ) {
+        this.log.warn(
+          "Battery device found but ignored. Please enable in settings and check regularly the battery status",
+        );
         return;
       }
       if (!this.config.streamusername || !this.config.streampassword) {
-        this.log.warn(`No stream username or password. No motion detection available`);
+        this.log.warn(
+          `No stream username or password. No motion detection available`,
+        );
       }
       deviceObject = new TAPOCamera(this.log, {
         name: device.deviceName,
         ipAddress: device.ip,
         password: this.config.password,
-        streamUser: this.config.streamusername || '',
-        streamPassword: this.config.streampassword || '',
+        streamUser: this.config.streamusername || "",
+        streamPassword: this.config.streampassword || "",
         disableStreaming: true,
       });
 
@@ -664,12 +951,12 @@ class Tapo extends utils.Adapter {
       this.log.debug(`Init event emitter for ${id}`);
       try {
         const eventEmitter = await deviceObject.getEventEmitter();
-        await this.setObjectNotExistsAsync(id + '.motionEvent', {
-          type: 'state',
+        await this.setObjectNotExistsAsync(id + ".motionEvent", {
+          type: "state",
           common: {
-            name: 'Motion detected',
-            type: 'boolean',
-            role: 'boolean',
+            name: "Motion detected",
+            type: "boolean",
+            role: "boolean",
             def: false,
             write: false,
             read: true,
@@ -677,14 +964,18 @@ class Tapo extends utils.Adapter {
           native: {},
         });
         this.log.debug('Init event listener for "motion"');
-        eventEmitter.addListener('motion', async (motionDetected: any) => {
-          await this.setStateAsync(id + '.motionEvent', motionDetected, true);
-          this.log.debug(`[${device.deviceName}] "Motion detected" ${motionDetected}`);
+        eventEmitter.addListener("motion", async (motionDetected: any) => {
+          await this.setStateAsync(id + ".motionEvent", motionDetected, true);
+          this.log.debug(
+            `[${device.deviceName}] "Motion detected" ${motionDetected}`,
+          );
         });
       } catch (e: any) {
         const msg = e?.message || String(e);
-        if (msg.includes('ECONNREFUSED')) {
-          this.log.info(`ONVIF port 2020 not reachable for ${device.ip}. Enable ONVIF in the Tapo app under camera settings to use motion events.`);
+        if (msg.includes("ECONNREFUSED")) {
+          this.log.info(
+            `ONVIF port 2020 not reachable for ${device.ip}. Enable ONVIF in the Tapo app under camera settings to use motion events.`,
+          );
         } else {
           this.log.debug(`ONVIF event emitter failed for ${device.ip}: ${msg}`);
         }
@@ -692,30 +983,48 @@ class Tapo extends utils.Adapter {
       return;
     } else {
       this.log.info(`Unknown device type ${device.deviceName} init as P100`);
-      deviceObject = new P100(this.log, device.ip, this.config.username, this.config.password, 2, port, useHttps);
+      deviceObject = new P100(
+        this.log,
+        device.ip,
+        this.config.username,
+        this.config.password,
+        2,
+        port,
+        useHttps,
+      );
     }
     this.deviceObjects[id] = deviceObject;
     try {
       await deviceObject.handshake();
       if (deviceObject.is_klap) {
-        this.log.debug('Detected KLAP device');
+        this.log.debug("Detected KLAP device");
         try {
           await deviceObject.handshake_new();
         } catch (error: any) {
-          this.log.info('KLAP Handshake failed, trying TPAP/SPAKE2+');
+          this.log.info("KLAP Handshake failed, trying TPAP/SPAKE2+");
           this.log.debug(error?.message || error);
           try {
             await deviceObject.handshake_tpap();
-            this.log.info('TPAP handshake successful for ' + device.ip);
+            this.log.info("TPAP handshake successful for " + device.ip);
           } catch (tpapError: any) {
-            this.log.debug('TPAP also failed: ' + (tpapError?.message || tpapError));
-            this.log.info('KLAP and TPAP Handshake failed for ' + device.ip + '. Try old handshake');
+            this.log.debug(
+              "TPAP also failed: " + (tpapError?.message || tpapError),
+            );
+            this.log.info(
+              "KLAP and TPAP Handshake failed for " +
+                device.ip +
+                ". Try old handshake",
+            );
             deviceObject.is_klap = false;
             deviceObject.is_tpap = false;
             try {
               await deviceObject.reAuthenticate();
             } catch {
-              this.log.info('All handshakes failed for ' + device.ip + '. Will retry on next poll.');
+              this.log.info(
+                "All handshakes failed for " +
+                  device.ip +
+                  ". Will retry on next poll.",
+              );
               await this.setDeviceConnected(id, false);
               return;
             }
@@ -725,38 +1034,47 @@ class Tapo extends utils.Adapter {
         try {
           await deviceObject.login();
         } catch {
-          this.log.info('Login failed for ' + device.ip + '. Will retry on next poll.');
+          this.log.info(
+            "Login failed for " + device.ip + ". Will retry on next poll.",
+          );
           await this.setDeviceConnected(id, false);
           return;
         }
       }
     } catch {
-      this.log.info('Device ' + device.ip + ' not reachable. Will retry on next poll.');
+      this.log.info(
+        "Device " + device.ip + " not reachable. Will retry on next poll.",
+      );
       await this.setDeviceConnected(id, false);
       return;
     }
     try {
       const sysInfo = await deviceObject.getDeviceInfo(true);
       if (!sysInfo || sysInfo.request) {
-        this.log.error('Malformed response sysinfo');
+        this.log.error("Malformed response sysinfo");
         this.log.error(JSON.stringify(sysInfo));
         return;
       }
       this.json2iob.parse(id, sysInfo);
       await this.setDeviceConnected(id, true);
       if (this.deviceObjects[id].getEnergyUsage) {
-        this.log.debug('Receive energy usage');
+        this.log.debug("Receive energy usage");
         const energyUsage = await this.deviceObjects[id].getEnergyUsage();
         this.log.debug(JSON.stringify(energyUsage));
         this.json2iob.parse(id, energyUsage);
       }
       const childList = await this.deviceObjects[id].getChildDevices();
-      this.log.debug('Childlist: ' + JSON.stringify(childList));
+      this.log.debug("Childlist: " + JSON.stringify(childList));
       if (childList && childList.error_code === 0) {
-        this.json2iob.parse(id + '.childlist', childList);
+        this.json2iob.parse(id + ".childlist", childList);
       }
     } catch (error: any) {
-      this.log.debug('Get Device Info failed for ' + device.ip + ': ' + (error?.message || error));
+      this.log.debug(
+        "Get Device Info failed for " +
+          device.ip +
+          ": " +
+          (error?.message || error),
+      );
       await this.setDeviceConnected(id, false);
     }
   }
@@ -765,90 +1083,121 @@ class Tapo extends utils.Adapter {
     try {
       for (const deviceId in this.deviceObjects) {
         if (this.deviceObjects[deviceId].getStatus) {
-          this.log.debug('Receive camera status');
-          const status = await this.deviceObjects[deviceId].getStatus().catch((error: any) => {
-            this.log.debug('Get camera Status failed: ' + (error?.message || error));
-          });
+          this.log.debug("Receive camera status");
+          const status = await this.deviceObjects[deviceId]
+            .getStatus()
+            .catch((error: any) => {
+              this.log.debug(
+                "Get camera Status failed: " + (error?.message || error),
+              );
+            });
           this.log.debug(JSON.stringify(status));
           if (status && Object.values(status).some((v) => v !== undefined)) {
             this.json2iob.parse(deviceId, status);
             if (!this.deviceObjects[deviceId]._connected) {
-              this.log.info('Reconnected to ' + this.deviceObjects[deviceId].ip);
+              this.log.info(
+                "Reconnected to " + this.deviceObjects[deviceId].ip,
+              );
             }
             this.deviceObjects[deviceId]._connected = true;
-            this.setState(deviceId + '.connected', true, true);
+            this.setState(deviceId + ".connected", true, true);
           } else {
             if (this.deviceObjects[deviceId]._connected) {
-              this.log.info('Connection lost to ' + this.deviceObjects[deviceId].ip);
+              this.log.info(
+                "Connection lost to " + this.deviceObjects[deviceId].ip,
+              );
             }
             this.deviceObjects[deviceId]._connected = false;
-            this.setState(deviceId + '.connected', false, true);
+            this.setState(deviceId + ".connected", false, true);
             continue;
           }
 
           // Poll detection events (searchDetectionList)
-          const events = await this.deviceObjects[deviceId].getDetectionEvents().catch((e: any) => {
-            this.log.debug('getDetectionEvents not supported: ' + (e?.message || e));
-          });
+          const events = await this.deviceObjects[deviceId]
+            .getDetectionEvents()
+            .catch((e: any) => {
+              this.log.debug(
+                "getDetectionEvents not supported: " + (e?.message || e),
+              );
+            });
           if (events && events.length > 0) {
             const now = Math.floor(Date.now() / 1000);
             const lastEvent = events[events.length - 1];
-            const active = now - (lastEvent.end_time || lastEvent.start_time) < 30;
+            const active =
+              now - (lastEvent.end_time || lastEvent.start_time) < 30;
             const reversed = [...events].reverse();
-            await this.json2iob.parse(deviceId + '.detection', {
+            await this.json2iob.parse(deviceId + ".detection", {
               active,
               eventCount: events.length,
               events: reversed,
             });
           } else if (events) {
-            await this.json2iob.parse(deviceId + '.detection', {
+            await this.json2iob.parse(deviceId + ".detection", {
               active: false,
               eventCount: 0,
             });
           }
 
           // Poll last alarm info
-          const alarmInfo = await this.deviceObjects[deviceId].getLastAlarmInfo().catch((e: any) => {
-            this.log.debug('getLastAlarmInfo not supported: ' + (e?.message || e));
-          });
+          const alarmInfo = await this.deviceObjects[deviceId]
+            .getLastAlarmInfo()
+            .catch((e: any) => {
+              this.log.debug(
+                "getLastAlarmInfo not supported: " + (e?.message || e),
+              );
+            });
           if (alarmInfo) {
-            await this.json2iob.parse(deviceId + '.alarmInfo', alarmInfo);
+            await this.json2iob.parse(deviceId + ".alarmInfo", alarmInfo);
           }
 
           // Poll alert event types (which detections trigger alarm)
-          const alertTypes = await this.deviceObjects[deviceId].getAlertEventType().catch((e: any) => {
-            this.log.debug('getAlertEventType not supported: ' + (e?.message || e));
-          });
+          const alertTypes = await this.deviceObjects[deviceId]
+            .getAlertEventType()
+            .catch((e: any) => {
+              this.log.debug(
+                "getAlertEventType not supported: " + (e?.message || e),
+              );
+            });
           if (alertTypes && alertTypes.length > 0) {
             const alertObj: Record<string, boolean> = {};
             for (const alertType of alertTypes) {
               if (alertType.name) {
-                alertObj[alertType.name] = alertType.enabled === 'on';
+                alertObj[alertType.name] = alertType.enabled === "on";
               }
             }
-            await this.json2iob.parse(deviceId + '.alertEventTypes', alertObj);
+            await this.json2iob.parse(deviceId + ".alertEventTypes", alertObj);
           }
 
           if (this.deviceObjects[deviceId].stok === undefined) {
             if (this.firstStart) {
-              this.log.error('No stok found for: ' + deviceId + ' Ignore and remove the device until next restart');
+              this.log.error(
+                "No stok found for: " +
+                  deviceId +
+                  " Ignore and remove the device until next restart",
+              );
               delete this.deviceObjects[deviceId];
             } else {
               this.log.info(
-                'No stok found for: ' + deviceId + ' this means the device is offline or connection lost. No update or commands possible',
+                "No stok found for: " +
+                  deviceId +
+                  " this means the device is offline or connection lost. No update or commands possible",
               );
               this.deviceObjects[deviceId]._connected = false;
-              this.setState(deviceId + '.connected', false, true);
+              this.setState(deviceId + ".connected", false, true);
             }
           }
           continue;
         }
         if (!this.deviceObjects[deviceId]._connected) {
-          this.log.debug('Device ' + deviceId + ' not connected, trying reconnect...');
+          this.log.debug(
+            "Device " + deviceId + " not connected, trying reconnect...",
+          );
           try {
             await this.deviceObjects[deviceId].reAuthenticate();
           } catch {
-            this.log.debug('Reconnect failed for ' + this.deviceObjects[deviceId].ip);
+            this.log.debug(
+              "Reconnect failed for " + this.deviceObjects[deviceId].ip,
+            );
             continue;
           }
         }
@@ -857,39 +1206,47 @@ class Tapo extends utils.Adapter {
           .getDeviceInfo(true)
           .then(async (sysInfo: any) => {
             this.log.debug(JSON.stringify(sysInfo));
-            if (!sysInfo || sysInfo.name === 'Error' || sysInfo.request) {
-              this.log.debug('Malformed response sysinfo');
+            if (!sysInfo || sysInfo.name === "Error" || sysInfo.request) {
+              this.log.debug("Malformed response sysinfo");
               // this.log.error(JSON.stringify(sysInfo));
               return;
             }
             if (!this.deviceObjects[deviceId]._connected) {
-              this.log.info('Reconnected to ' + this.deviceObjects[deviceId].ip);
+              this.log.info(
+                "Reconnected to " + this.deviceObjects[deviceId].ip,
+              );
             }
             this.deviceObjects[deviceId]._connected = true;
-            await this.setState(deviceId + '.connected', true, true);
+            await this.setState(deviceId + ".connected", true, true);
             await this.json2iob.parse(deviceId, sysInfo);
             if (this.deviceObjects[deviceId].getEnergyUsage) {
-              this.log.debug('Receive energy usage');
-              const energyUsage = await this.deviceObjects[deviceId].getEnergyUsage();
+              this.log.debug("Receive energy usage");
+              const energyUsage =
+                await this.deviceObjects[deviceId].getEnergyUsage();
               this.log.debug(JSON.stringify(energyUsage));
               if (energyUsage.request) {
-                this.log.error('Malformed response getEnergyUsage');
+                this.log.error("Malformed response getEnergyUsage");
                 this.log.error(JSON.stringify(energyUsage));
                 return;
               }
               await this.json2iob.parse(deviceId, energyUsage);
-              const power_usage = this.deviceObjects[deviceId].getPowerConsumption();
+              const power_usage =
+                this.deviceObjects[deviceId].getPowerConsumption();
               if (power_usage.request) {
-                this.log.error('Malformed response getPowerConsumption');
+                this.log.error("Malformed response getPowerConsumption");
                 this.log.error(JSON.stringify(power_usage));
                 return;
               }
               await this.json2iob.parse(deviceId, power_usage);
               // Emeter data (voltage, current) - may not be supported on all devices
               if (this.deviceObjects[deviceId].getEmeterData) {
-                const emeterData = await this.deviceObjects[deviceId].getEmeterData().catch((e: any) => {
-                  this.log.debug('get_emeter_data not supported: ' + (e?.message || e));
-                });
+                const emeterData = await this.deviceObjects[deviceId]
+                  .getEmeterData()
+                  .catch((e: any) => {
+                    this.log.debug(
+                      "get_emeter_data not supported: " + (e?.message || e),
+                    );
+                  });
                 if (emeterData && !emeterData.request) {
                   await this.json2iob.parse(deviceId, emeterData);
                 }
@@ -899,30 +1256,38 @@ class Tapo extends utils.Adapter {
           .catch((error: any) => {
             this.log.debug(`Get Device Info failed for ${deviceId} - ${error}`);
             if (this.deviceObjects[deviceId]._connected) {
-              this.log.info('Connection lost to ' + this.deviceObjects[deviceId].ip);
+              this.log.info(
+                "Connection lost to " + this.deviceObjects[deviceId].ip,
+              );
             }
             this.deviceObjects[deviceId]._connected = false;
-            this.setState(deviceId + '.connected', false, true);
+            this.setState(deviceId + ".connected", false, true);
           });
       }
-      this.log.debug('Update done');
+      this.log.debug("Update done");
     } catch (error: any) {
       this.log.warn(error);
     }
   }
 
-  async setDeviceConnected(deviceId: string, connected: boolean): Promise<void> {
+  async setDeviceConnected(
+    deviceId: string,
+    connected: boolean,
+  ): Promise<void> {
     this.deviceObjects[deviceId]._connected = connected;
-    await this.setState(deviceId + '.connected', connected, true);
+    await this.setState(deviceId + ".connected", connected, true);
   }
 
   isBase64(str: string): boolean {
-    if (str === '' || str.trim() === '') {
+    if (str === "" || str.trim() === "") {
       return false;
     }
     try {
-      const strWithoutPadding = str.replace(/=*$/, '');
-      return btoa(atob(strWithoutPadding)) === strWithoutPadding || btoa(atob(str)) === str;
+      const strWithoutPadding = str.replace(/=*$/, "");
+      return (
+        btoa(atob(strWithoutPadding)) === strWithoutPadding ||
+        btoa(atob(str)) === str
+      );
     } catch (err) {
       return false;
     }
@@ -931,14 +1296,14 @@ class Tapo extends utils.Adapter {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
   async refreshToken(): Promise<void> {
-    this.log.debug('Refresh token');
+    this.log.debug("Refresh token");
   }
   /**
    * Is called when adapter shuts down - callback has to be called under any circumstances!
    */
   private onUnload(callback: () => void): void {
     try {
-      this.setState('info.connection', false, true);
+      this.setState("info.connection", false, true);
       this.refreshTimeout && clearTimeout(this.refreshTimeout);
       this.reLoginTimeout && clearTimeout(this.reLoginTimeout);
       this.refreshTokenTimeout && clearTimeout(this.refreshTokenTimeout);
@@ -954,16 +1319,19 @@ class Tapo extends utils.Adapter {
   /**
    * Is called if a subscribed state changes
    */
-  private async onStateChange(id: string, state: ioBroker.State | null | undefined): Promise<void> {
+  private async onStateChange(
+    id: string,
+    state: ioBroker.State | null | undefined,
+  ): Promise<void> {
     if (state) {
       if (!state.ack) {
-        const deviceId = id.split('.')[2];
-        const command = id.split('.')[4];
-        if (id.split('.')[3] !== 'remote') {
+        const deviceId = id.split(".")[2];
+        const command = id.split(".")[4];
+        if (id.split(".")[3] !== "remote") {
           return;
         }
 
-        if (command === 'refresh') {
+        if (command === "refresh") {
           if (this.deviceObjects[deviceId].getStatus) {
             this.deviceObjects[deviceId]
               .getStatus()
@@ -972,7 +1340,9 @@ class Tapo extends utils.Adapter {
                 this.json2iob.parse(deviceId, status);
               })
               .catch((error: any) => {
-                this.log.debug(`Get camera status failed for ${deviceId} - ${error}`);
+                this.log.debug(
+                  `Get camera status failed for ${deviceId} - ${error}`,
+                );
               });
           } else {
             this.deviceObjects[deviceId]
@@ -982,49 +1352,72 @@ class Tapo extends utils.Adapter {
                 this.json2iob.parse(deviceId, sysInfo);
               })
               .catch((error: any) => {
-                this.log.debug(`Get Device Info failed for ${deviceId} - ${error}`);
+                this.log.debug(
+                  `Get Device Info failed for ${deviceId} - ${error}`,
+                );
                 if (this.deviceObjects[deviceId]._connected) {
-                  this.log.info('Connection lost to ' + this.deviceObjects[deviceId].ip);
+                  this.log.info(
+                    "Connection lost to " + this.deviceObjects[deviceId].ip,
+                  );
                 }
                 this.deviceObjects[deviceId]._connected = false;
-                this.setState(deviceId + '.connected', false, true);
+                this.setState(deviceId + ".connected", false, true);
               });
           }
           return;
         }
         try {
           const cameraCommands: { [key: string]: string } = {
-            setAlertConfig: 'alarm',
-            setLensMaskConfig: 'eyes',
-            setLedStatus: 'led',
-            setMsgPushConfig: 'notifications',
-            setDetectionConfig: 'motionDetection',
-            setAutoTrackTarget: 'autoTrack',
-            setPersonDetection: 'personDetection',
-            setVehicleDetection: 'vehicleDetection',
-            setPetDetection: 'petDetection',
-            setBabyCryDetection: 'babyCryDetection',
-            setBarkDetection: 'barkDetection',
-            setMeowDetection: 'meowDetection',
-            setGlassBreakDetection: 'glassBreakDetection',
-            setTamperDetection: 'tamperDetection',
-            setImageFlipVertical: 'imageFlip',
-            setLensDistortionCorrection: 'ldc',
-            setRecordAudio: 'recordAudio',
-            setAutoUpgrade: 'autoUpgrade',
+            setAlertConfig: "alarm",
+            setLensMaskConfig: "eyes",
+            setLedStatus: "led",
+            setMsgPushConfig: "notifications",
+            setDetectionConfig: "motionDetection",
+            setAutoTrackTarget: "autoTrack",
+            setPersonDetection: "personDetection",
+            setVehicleDetection: "vehicleDetection",
+            setPetDetection: "petDetection",
+            setBabyCryDetection: "babyCryDetection",
+            setBarkDetection: "barkDetection",
+            setMeowDetection: "meowDetection",
+            setGlassBreakDetection: "glassBreakDetection",
+            setTamperDetection: "tamperDetection",
+            setImageFlipVertical: "imageFlip",
+            setLensDistortionCorrection: "ldc",
+            setRecordAudio: "recordAudio",
+            setAutoUpgrade: "autoUpgrade",
           };
-          if (this.deviceObjects[deviceId] && (this.deviceObjects[deviceId][command] || cameraCommands[command])) {
+          if (
+            this.deviceObjects[deviceId] &&
+            (this.deviceObjects[deviceId][command] || cameraCommands[command])
+          ) {
             let result;
             if (cameraCommands[command]) {
-              result = await this.deviceObjects[deviceId].setStatus(cameraCommands[command], state.val);
-            } else if (command === 'setColor' || command === 'moveMotor' || command === 'setPowerStateChild') {
-              const valueSplit = String(state.val).replace(' ', '').split(',');
-              result = await this.deviceObjects[deviceId][command](valueSplit[0], valueSplit[1]);
+              result = await this.deviceObjects[deviceId].setStatus(
+                cameraCommands[command],
+                state.val,
+              );
+            } else if (
+              command === "setColor" ||
+              command === "moveMotor" ||
+              command === "setPowerStateChild"
+            ) {
+              const valueSplit = String(state.val).replace(" ", "").split(",");
+              result = await this.deviceObjects[deviceId][command](
+                valueSplit[0],
+                valueSplit[1],
+              );
             } else {
               result = await this.deviceObjects[deviceId][command](state.val);
             }
             this.log.info(
-              command + ' was set to : ' + state.val + ' for device ' + deviceId + ' was successful: ' + JSON.stringify(result),
+              command +
+                " was set to : " +
+                state.val +
+                " for device " +
+                deviceId +
+                " was successful: " +
+                JSON.stringify(result),
             );
             this.refreshTimeout && clearTimeout(this.refreshTimeout);
             this.refreshTimeout = setTimeout(async () => {
@@ -1042,32 +1435,35 @@ class Tapo extends utils.Adapter {
         }
       } else {
         const resultDict: { [key: string]: string } = {
-          device_on: 'setPowerState',
-          eyes: 'setLensMaskConfig',
-          alarm: 'setAlertConfig',
-          led: 'setLedStatus',
-          notifications: 'setMsgPushConfig',
-          motionDetection: 'setDetectionConfig',
-          autoTrack: 'setAutoTrackTarget',
-          personDetection: 'setPersonDetection',
-          vehicleDetection: 'setVehicleDetection',
-          petDetection: 'setPetDetection',
-          babyCryDetection: 'setBabyCryDetection',
-          barkDetection: 'setBarkDetection',
-          meowDetection: 'setMeowDetection',
-          glassBreakDetection: 'setGlassBreakDetection',
-          tamperDetection: 'setTamperDetection',
-          imageFlip: 'setImageFlipVertical',
-          ldc: 'setLensDistortionCorrection',
-          recordAudio: 'setRecordAudio',
-          autoUpgrade: 'setAutoUpgrade',
+          device_on: "setPowerState",
+          eyes: "setLensMaskConfig",
+          alarm: "setAlertConfig",
+          led: "setLedStatus",
+          notifications: "setMsgPushConfig",
+          motionDetection: "setDetectionConfig",
+          autoTrack: "setAutoTrackTarget",
+          personDetection: "setPersonDetection",
+          vehicleDetection: "setVehicleDetection",
+          petDetection: "setPetDetection",
+          babyCryDetection: "setBabyCryDetection",
+          barkDetection: "setBarkDetection",
+          meowDetection: "setMeowDetection",
+          glassBreakDetection: "setGlassBreakDetection",
+          tamperDetection: "setTamperDetection",
+          imageFlip: "setImageFlipVertical",
+          ldc: "setLensDistortionCorrection",
+          recordAudio: "setRecordAudio",
+          autoUpgrade: "setAutoUpgrade",
         };
-        const idArray = id.split('.');
+        const idArray = id.split(".");
         const stateName = idArray[idArray.length - 1];
-        const deviceId = id.split('.')[2];
+        const deviceId = id.split(".")[2];
         if (resultDict[stateName]) {
-          const remoteState = deviceId + '.remote.' + resultDict[stateName];
-          const val = typeof state.val === 'string' ? state.val === 'true' || state.val === 'on' : state.val;
+          const remoteState = deviceId + ".remote." + resultDict[stateName];
+          const val =
+            typeof state.val === "string"
+              ? state.val === "true" || state.val === "on"
+              : state.val;
           await this.setState(remoteState, val, true);
         }
       }
@@ -1077,7 +1473,8 @@ class Tapo extends utils.Adapter {
 
 if (require.main !== module) {
   // Export the constructor in compact mode
-  module.exports = (options: Partial<utils.AdapterOptions> | undefined) => new Tapo(options);
+  module.exports = (options: Partial<utils.AdapterOptions> | undefined) =>
+    new Tapo(options);
 } else {
   // otherwise start the instance directly
   (() => new Tapo())();
