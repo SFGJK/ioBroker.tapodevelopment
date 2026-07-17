@@ -9,7 +9,7 @@
 
 [![NPM](https://nodei.co/npm/ioBroker.tapodevelopment.png?downloads=true)](https://nodei.co/npm/ioBroker.tapodevelopment/)
 
-**Tests:** ![Test and Release](https://github.com/TA2k/ioBroker.tapodevelopment/workflows/Test%20and%20Release/badge.svg)
+**Tests:** ![Test and Release](https://github.com/SFGJK/ioBroker.tapodevelopment/workflows/Test%20and%20Release/badge.svg)
 
 ## tapo adapter for ioBroker
 
@@ -449,13 +449,13 @@ update onvif lib to fix issues with newer cameras
 
 ### 0.0.2
 
-- (TA2k) initial release
+- (SFGJK) initial release
 
 ## License
 
 MIT License
 
-Copyright (c) 2024-2030 TA2k <tombox2020@gmail.com>
+Copyright (c) 2024-2030 SFGJK <s.klopries@outlook.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

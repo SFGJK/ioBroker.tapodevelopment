@@ -74,7 +74,7 @@
     "release": "release-script --all"
   },
   "bugs": {
-    "url": "https://github.com/TA2k/ioBroker.tapodevelopment/issues"
+    "url": "https://github.com/SFGJK/ioBroker.tapodevelopment/issues"
   },
   "readmeFilename": "README.md"
 }
